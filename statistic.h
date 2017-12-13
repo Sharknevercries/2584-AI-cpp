@@ -74,7 +74,7 @@ public:
 		std::cout << "ops = " << unsigned(ops) << std::endl;
 		for (int t = 0, c = 0; c < block; c += stat[t++]) {
 			if (stat[t] == 0) continue;
-			int accu = std::accumulate(stat + t, stat + 16, 0);
+			int accu = std::accumulate(stat + t, stat + 32, 0);
 			std::cout << "\t" << tile_mapping[t] << "\t" << (accu * coef) << "%";
 			std::cout << "\t(" << (stat[t] * coef) << "%)" << std::endl;
 		}

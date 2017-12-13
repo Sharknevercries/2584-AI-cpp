@@ -34,10 +34,10 @@ public:
 	friend std::istream& operator >>(std::istream& in, weight& w) {
 		float*& value = w.value;
 		size_t& size = w.length;
-		if (value) {
-			std::cerr << "reading to a non-empty weight" << std::endl;
-			std::exit(1);
-		}
+		// if (value) {
+		// 	std::cerr << "reading to a non-empty weight" << std::endl;
+		// 	std::exit(1);
+		// }
 		if (in.read(reinterpret_cast<char*>(&size), sizeof(size_t))) {
 			value = alloc(size);
 			in.read(reinterpret_cast<char*>(value), sizeof(float) * size);

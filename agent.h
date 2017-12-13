@@ -9,6 +9,8 @@
 #include "action.h"
 #include "weight.h"
 #include "env.h"
+#include "feature.h"
+#include "tuple_network.h"
 
 class agent {
 public:
@@ -56,8 +58,7 @@ public:
 	}
 
 	virtual action take_action(const board& after) {
-		int space[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
-		std::shuffle(space, space + 16, engine);
+		std::shuffle(space.begin(), space.end(), engine);
 		for (int pos : space) {
 			if (after(pos) != 0) continue;
 			std::uniform_int_distribution<int> popup(0, 3);
@@ -84,13 +85,19 @@ public:
 		if (property.find("alpha") != property.end())
 			alpha = float(property["alpha"]);
 
+		tn = tuple_netwrok({
+			{0, 1, 2, 3, 4},
+			{0, 1, 4, 5, 6},
+			{1, 2, 3, 5, 6},
+			{5, 6, 7, 9, 10},
+		});
+
 		if (property.find("load") != property.end())
-			load_weights(property["load"]);
-		// TODO: initialize the n-tuple network
+			tn.load_weights(property["load"]);
 	}
 	~player() {
 		if (property.find("save") != property.end())
-			save_weights(property["save"]);
+			tn.save_weights(property["save"]);
 	}
 
 	virtual void open_episode(const std::string& flag = "") {
@@ -99,58 +106,43 @@ public:
 	}
 
 	virtual void close_episode(const std::string& flag = "") {
-		// TODO: train the n-tuple network by TD(0)
+		int n = episode.size() - 1;
+		tn.update(episode[n].after, alpha * (-tn.estimate(episode[n].after)));
+		
+		for (int i = episode.size() - 1; i >= 1; --i) {
+			float td_error = episode[i].reward + tn.estimate(episode[i].after) - tn.estimate(episode[i - 1].after);
+			tn.update(episode[i - 1].after, alpha * td_error);
+		}
 	}
 
 	virtual action take_action(const board& before) {
-		action best;
-		int best_reward = -1;
+		state best(before, action(), 0);
+		float best_value = -1e9;
 
 		for (int dir = 0; dir < 4; ++dir) {
 			auto act = action::move(dir);
 			auto temp_b = board(before);
 			int reward = act.apply(temp_b);
-			if (reward > best_reward) {
-				best = act;
-				best_reward = reward;
+			if (reward != -1) {
+				float esti = tn.estimate(temp_b);
+				if (reward + esti > best_value) {
+					best = state(temp_b, act, reward);
+					best_value = reward + esti;
+				}
 			}
 		}
-		// TODO: select a proper action
-		// TODO: push the step into episode
-		return best;
-	}
+		episode.push_back(best);
 
-public:
-	virtual void load_weights(const std::string& path) {
-		std::ifstream in;
-		in.open(path.c_str(), std::ios::in | std::ios::binary);
-		if (!in.is_open()) std::exit(-1);
-		size_t size;
-		in.read(reinterpret_cast<char*>(&size), sizeof(size));
-		weights.resize(size);
-		for (weight& w : weights)
-			in >> w;
-		in.close();
-	}
-
-	virtual void save_weights(const std::string& path) {
-		std::ofstream out;
-		out.open(path.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-		if (!out.is_open()) std::exit(-1);
-		size_t size = weights.size();
-		out.write(reinterpret_cast<char*>(&size), sizeof(size));
-		for (weight& w : weights)
-			out << w;
-		out.flush();
-		out.close();
+		return best.move;
 	}
 
 private:
-	std::vector<weight> weights;
+	tuple_netwrok tn;
 
 	struct state {
+		state() {}
+		state(const board& after, const action& act, int reward) : after(after), move(act), reward(reward) {}
 		// TODO: select the necessary components of a state
-		board before;
 		board after;
 		action move;
 		int reward;
