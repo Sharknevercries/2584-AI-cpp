@@ -2,6 +2,7 @@
 #include <array>
 #include <iostream>
 #include <cstdio>
+#include "env.h"
 
 /**
  * array-based board for 2048
@@ -65,9 +66,10 @@ public:
 				if (tile == 0) continue;
 				row[c] = 0;
 				if (hold) {
-					if (tile == hold) {
-						row[top++] = ++tile;
-						score += (1 << tile);
+					if ((tile == 1 && hold == 1) || abs(tile - hold) == 1) {
+						int new_tile = std::max(tile, hold) + 1;
+						row[top++] = new_tile;
+						score += tile_mapping[new_tile];
 						hold = 0;
 					} else {
 						row[top++] = hold;
@@ -143,18 +145,17 @@ public:
     friend std::ostream& operator <<(std::ostream& out, const board& b) {
 		char buff[64];
 		out << "+------------------------+" << std::endl;
-		for (int r = 0; r < 4; r++) {
-			std::snprintf(buff, sizeof(buff), "|%6u%6u%6u%6u|",
-				(1 << b[r][0]) & -2u, // use -2u (0xff...fe) to remove the unnecessary 1 for (1 << 0)
-				(1 << b[r][1]) & -2u,
-				(1 << b[r][2]) & -2u,
-				(1 << b[r][3]) & -2u);
+		for (int r = 0; r < 4; ++r) {
+				snprintf(buff, sizeof(buff), "|%6d%6d%6d%6d|",
+					tile_mapping[b[r][0]],
+					tile_mapping[b[r][1]],
+					tile_mapping[b[r][2]],
+					tile_mapping[b[r][3]]);
 			out << buff << std::endl;
 		}
 		out << "+------------------------+" << std::endl;
 		return out;
 	}
-
 private:
     std::array<std::array<int, 4>, 4> tile;
 };

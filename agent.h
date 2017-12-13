@@ -8,6 +8,7 @@
 #include "board.h"
 #include "action.h"
 #include "weight.h"
+#include "env.h"
 
 class agent {
 public:
@@ -44,8 +45,8 @@ protected:
 /**
  * evil (environment agent)
  * add a new random tile on board, or do nothing if the board is full
- * 2-tile: 90%
- * 4-tile: 10%
+ * 1-tile: 75%
+ * 3-tile: 25%
  */
 class rndenv : public agent {
 public:
@@ -59,8 +60,8 @@ public:
 		std::shuffle(space, space + 16, engine);
 		for (int pos : space) {
 			if (after(pos) != 0) continue;
-			std::uniform_int_distribution<int> popup(0, 9);
-			int tile = popup(engine) ? 1 : 2;
+			std::uniform_int_distribution<int> popup(0, 3);
+			int tile = popup(engine) ? 1 : 3;
 			return action::place(tile, pos);
 		}
 		return action();
@@ -103,6 +104,17 @@ public:
 
 	virtual action take_action(const board& before) {
 		action best;
+		int best_reward = -1;
+
+		for (int dir = 0; dir < 4; ++dir) {
+			auto act = action::move(dir);
+			auto temp_b = board(before);
+			int reward = act.apply(temp_b);
+			if (reward > best_reward) {
+				best = act;
+				best_reward = reward;
+			}
+		}
 		// TODO: select a proper action
 		// TODO: push the step into episode
 		return best;

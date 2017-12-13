@@ -47,7 +47,7 @@ public:
 	 */
 	void show() const {
 		int block = std::min(data.size(), this->block);
-		size_t sum = 0, max = 0, opc = 0, stat[16] = { 0 };
+		size_t sum = 0, max = 0, opc = 0, stat[32] = { 0 };
 		uint64_t duration = 0;
 		auto it = data.end();
 		for (int i = 0; i < block; i++) {
@@ -75,7 +75,7 @@ public:
 		for (int t = 0, c = 0; c < block; c += stat[t++]) {
 			if (stat[t] == 0) continue;
 			int accu = std::accumulate(stat + t, stat + 16, 0);
-			std::cout << "\t" << ((1 << t) & -2u) << "\t" << (accu * coef) << "%";
+			std::cout << "\t" << tile_mapping[t] << "\t" << (accu * coef) << "%";
 			std::cout << "\t(" << (stat[t] * coef) << "%)" << std::endl;
 		}
 		std::cout << std::endl;
@@ -100,7 +100,7 @@ public:
 
 	void close_episode(const std::string& flag = "") {
 		data.back().tock();
-		if (count % block == 0) show();
+		if (count % block == 0)	show();
 	}
 
 	board make_empty_board() {
