@@ -87,7 +87,6 @@ public:
 
 		tn = tuple_netwrok({
 			{0, 1, 2, 3, 4},
-			{0, 1, 4, 5, 6},
 			{1, 2, 3, 5, 6},
 			{5, 6, 7, 9, 10},
 		});
@@ -106,12 +105,13 @@ public:
 	}
 
 	virtual void close_episode(const std::string& flag = "") {
-		int n = episode.size() - 1;
-		tn.update(episode[n].after, alpha * (-tn.estimate(episode[n].after)));
-		
-		for (int i = episode.size() - 1; i >= 1; --i) {
-			float td_error = episode[i].reward + tn.estimate(episode[i].after) - tn.estimate(episode[i - 1].after);
-			tn.update(episode[i - 1].after, alpha * td_error);
+		auto cur = episode.end() - 1, prev = cur - 1;
+		tn.update(cur->after, alpha * (-tn.estimate(cur->after)));		
+		while (cur != episode.begin()) {
+			float td_error = cur->reward + tn.estimate(cur->after) - tn.estimate(prev->after);
+			tn.update(prev->after, alpha * td_error);
+			cur = prev;
+			--prev;
 		}
 	}
 
@@ -119,14 +119,23 @@ public:
 		state best(before, action(), 0);
 		float best_value = -1e9;
 
-		for (int dir = 0; dir < 4; ++dir) {
-			auto act = action::move(dir);
-			auto temp_b = board(before);
-			int reward = act.apply(temp_b);
+		for (int op = 0; op < 4; ++op) {
+			auto act = action::move(op);
+			auto temp = board(before);
+			int reward = act.apply(temp);
+			// int empty_tiles = temp.empty_tile_count();
 			if (reward != -1) {
-				float esti = tn.estimate(temp_b);
+				float esti = 0;
+				// if (empty_tiles < 2)
+				// 	esti = expeceted_node(6, temp);
+				// else if (empty_tiles < 3)
+				// 	esti = expeceted_node(4, temp);
+				// else if (empty_tiles < 4)
+				// 	esti = expeceted_node(2, temp);
+				// else
+				esti = tn.estimate(temp);
 				if (reward + esti > best_value) {
-					best = state(temp_b, act, reward);
+					best = state(temp, act, reward);
 					best_value = reward + esti;
 				}
 			}
@@ -134,6 +143,36 @@ public:
 		episode.push_back(best);
 
 		return best.move;
+	}
+private:
+	float max_node(const int level, const board& b) {
+		float max_value = 0;
+		for (int op = 0; op < 4; ++op) {
+			board temp(b);
+			int reward = action::move(op).apply(temp);
+			float esti = 0;
+			if (reward != -1) {
+				if (level - 1 > 0)
+					esti = expeceted_node(level - 1, temp);
+				else
+					esti = tn.estimate(temp);
+			}
+			max_value = std::max(max_value, reward + esti);
+		}
+		return max_value;
+	}
+
+	float expeceted_node(int level, const board& b) {
+		int empty_tiles = b.empty_tile_count();
+		float v = 0;
+		board temp1(b), temp2(b);
+		for (int i = 0; i < 16; ++i) {
+			if (b(i) != 0)	continue;
+			temp1(i) = 1, temp2(i) = 3;
+			v += max_node(level - 1, temp1) / empty_tiles * 0.75;
+			v += max_node(level - 1, temp2) / empty_tiles * 0.25;
+		}
+		return v;
 	}
 
 private:

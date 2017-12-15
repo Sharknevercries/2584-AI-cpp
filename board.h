@@ -141,6 +141,15 @@ public:
 	void rotate_left() { transpose(); reflect_vertical(); } // counterclockwise
 	void reverse() { reflect_horizontal(); reflect_vertical(); }
 
+	int empty_tile_count() const {
+		int count = 0;
+		for (int r = 0; r < 4; ++r)
+			for (int c = 0; c < 4; ++c)
+				if (tile[r][c] == 0)
+					++count;
+		return count;
+	}
+
 public:
     friend std::ostream& operator <<(std::ostream& out, const board& b) {
 		char buff[64];

@@ -22,13 +22,13 @@ public:
 public:
     virtual void update(const board& b, float v) {
         v /= 8.0;
-        for (const auto &iso_idx : iso_idxs)
+        for (const auto& iso_idx : iso_idxs)
             value[at(b, iso_idx)] += v;
     }
 
-    virtual float estimate(const board&b) {
+    virtual float estimate(const board& b) {
         float v = 0.0;
-        for (const auto &iso_idx : iso_idxs)
+        for (const auto& iso_idx : iso_idxs)
             v += value[at(b, iso_idx)];
         return v;
     }
