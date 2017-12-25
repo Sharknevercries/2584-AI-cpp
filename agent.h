@@ -234,11 +234,10 @@ public:
 			auto act = action::move(op);
 			auto temp = board(before);
 			int reward = act.apply(temp);
-			// int empty_tiles = temp.empty_tile_count();
 			if (reward != -1) {
 				float esti = 0;
 				// esti = tn.estimate(temp);
-				esti = min_node(2, temp);
+				esti = min_node(2, temp, best_value - reward, 1e9);
 				if (reward + esti > best_value) {
 					best = state(temp, act, reward);
 					best_value = reward + esti;
@@ -250,36 +249,51 @@ public:
 		return best.move;
 	}
 private:
-	float max_node(const int level, const board& b) {
-		float max_value = 0;
+	float max_node(const int level, const board& b, float alpha, float beta) {
+		float m = alpha;
+		bool has_child = false;
 		for (int op = 0; op < 4; ++op) {
 			board temp(b);
 			int reward = action::move(op).apply(temp);
 			float esti = 0;
 			if (reward != -1) {
+				has_child = true;
 				if (level - 1 > 0)
-					esti = min_node(level - 1, temp);
+					esti = min_node(level - 1, temp, m - reward, beta);
 				else
 					esti = tn.estimate(temp);
+				m = std::max(m, reward + esti);
+				if (m >= beta)
+					return m;
 			}
-			max_value = std::max(max_value, reward + esti);
 		}
-		return max_value;
+		return has_child ? m : 0;
 	}
 
-	float min_node(int level, const board& b) {
-		float min_value = 1e9;
+	float min_node(int level, const board& b, float alpha, float beta) {
+		const float a4 = alpha * 4;
+		float m = beta, m4 = 4 * m;
+		bool has_child = false;
 		board temp1(b), temp2(b);
 		for (int i = 0; i < 16; ++i) {
 			if (b(i) != 0)	continue;
-			float v = 0;
+			has_child = true;
+
+			float v1 = 0, v2, v3, ev;
 			temp1(i) = 1, temp2(i) = 3;
-			v += max_node(level - 1, temp1) * 0.75;
-			v += max_node(level - 1, temp2) * 0.25;
+			v1 = max_node(level - 1, temp1, -1e9, 1e9);
+			v3 = v1 * 3;
+			v2 = max_node(level - 1, temp2, a4 - v3, m4 - v3);
 			temp1(i) = 0, temp2(i) = 0;
-			min_value = std::min(min_value, v);
+			ev = v1 * 0.75 + v2 * 0.25;
+			if (m > ev) {
+				m = ev;
+				m4 = 4 * m;
+			}
+			if (m <= alpha)
+				return m;
 		}
-		return min_value;
+		return has_child ? m : 0;
 	}
 
 private:
