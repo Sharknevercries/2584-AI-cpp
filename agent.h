@@ -237,14 +237,8 @@ public:
 			// int empty_tiles = temp.empty_tile_count();
 			if (reward != -1) {
 				float esti = 0;
-				// if (empty_tiles < 2)
-				// 	esti = expeceted_node(6, temp);
-				// else if (empty_tiles < 3)
-				// 	esti = expeceted_node(4, temp);
-				// else if (empty_tiles < 4)
-				// 	esti = expeceted_node(2, temp);
-				// else
-				esti = tn.estimate(temp);
+				// esti = tn.estimate(temp);
+				esti = min_node(2, temp);
 				if (reward + esti > best_value) {
 					best = state(temp, act, reward);
 					best_value = reward + esti;
@@ -264,7 +258,7 @@ private:
 			float esti = 0;
 			if (reward != -1) {
 				if (level - 1 > 0)
-					esti = expeceted_node(level - 1, temp);
+					esti = min_node(level - 1, temp);
 				else
 					esti = tn.estimate(temp);
 			}
@@ -273,18 +267,19 @@ private:
 		return max_value;
 	}
 
-	float expeceted_node(int level, const board& b) {
-		int empty_tiles = b.empty_tile_count();
-		float v = 0;
+	float min_node(int level, const board& b) {
+		float min_value = 1e9;
 		board temp1(b), temp2(b);
 		for (int i = 0; i < 16; ++i) {
 			if (b(i) != 0)	continue;
+			float v = 0;
 			temp1(i) = 1, temp2(i) = 3;
-			v += max_node(level - 1, temp1) / empty_tiles * 0.75;
-			v += max_node(level - 1, temp2) / empty_tiles * 0.25;
+			v += max_node(level - 1, temp1) * 0.75;
+			v += max_node(level - 1, temp2) * 0.25;
 			temp1(i) = 0, temp2(i) = 0;
+			min_value = std::min(min_value, v);
 		}
-		return v;
+		return min_value;
 	}
 
 private:
