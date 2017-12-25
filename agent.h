@@ -234,10 +234,16 @@ public:
 			auto act = action::move(op);
 			auto temp = board(before);
 			int reward = act.apply(temp);
+			const int empty_tiles = temp.empty_tile_count();
 			if (reward != -1) {
 				float esti = 0;
 				// esti = tn.estimate(temp);
-				esti = min_node(2, temp, best_value - reward, 1e9);
+				if (empty_tiles < 2)
+					esti = min_node(6, temp, best_value - reward, 1e9);
+				else if (empty_tiles < 4)
+					esti = min_node(4, temp, best_value - reward, 1e9);
+				else
+					esti = min_node(2, temp, best_value - reward, 1e9);
 				if (reward + esti > best_value) {
 					best = state(temp, act, reward);
 					best_value = reward + esti;
