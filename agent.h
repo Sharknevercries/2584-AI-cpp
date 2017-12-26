@@ -77,13 +77,21 @@ public:
 		if (enable_evil) {
 			float m = 1e9, m4 = m * 4;
 			int best_pos = -1;
+			int level = 1;
+			const int empty_tiles = b.empty_tile_count();
+
+			if (empty_tiles < 2)
+				level = 5;
+			else if (empty_tiles < 5)
+				level = 3;
+
 			board temp1(b), temp2(b);
 			for (const int pos : space) {
 				if (b(pos) != 0) continue;
 				float v1, v2, ev;
-				temp1(pos) = 1, temp2(pos) = 3;				
-				v1 = max_node(3, temp1, -1e9, 1e9);
-				v2 = max_node(3, temp2, -1e9, m4 - 3 * v1);
+				temp1(pos) = 1, temp2(pos) = 3;
+				v1 = max_node(level, temp1, -1e9, 1e9);
+				v2 = max_node(level, temp2, -1e9, m4 - 3 * v1);
 				ev = v1 * 0.75 + v2 * 0.25;
 				temp1(pos) = 0, temp2(pos) = 0;
 				if (m > ev) {
@@ -224,16 +232,21 @@ public:
 				auto temp = board(before);
 				int reward = act.apply(temp);
 				const int empty_tiles = temp.empty_tile_count();
+				int level = 0;
+
+				if (enable_search) {
+					if (empty_tiles < 2)
+						level = 6;
+					else if (empty_tiles < 3)
+						level = 4;
+					else
+						level = 2;
+				}
+
 				if (reward != -1) {
 					float esti = 0;
-					if (enable_search) {
-						if (empty_tiles < 2)
-							esti = min_node(6, temp, best_value - reward, 1e9);
-						else if (empty_tiles < 4)
-							esti = min_node(4, temp, best_value - reward, 1e9);
-						else
-							esti = min_node(2, temp, best_value - reward, 1e9);
-					}
+					if (level > 0)
+						esti = min_node(level, temp, best_value - reward, 1e9);
 					else
 						esti = tn.estimate(temp);
 					if (reward + esti > best_value) {
