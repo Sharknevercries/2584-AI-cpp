@@ -52,7 +52,7 @@ protected:
  */
 class rndenv : public agent {
 public:
-	rndenv(const std::string& args = "") : agent("name=rndenv role=environment " + args), enable_evil(true) {
+	rndenv(const std::string& args = "") : agent("name=vanilla role=environment " + args), enable_evil(true) {
 		if (property.find("seed") != property.end())
 			engine.seed(int(property["seed"]));
 		if (property.find("evil") != property.end())
@@ -164,7 +164,7 @@ private:
  */
 class player : public agent {
 public:
-	player(const std::string& args = "") : agent("name=player role=player " + args), alpha(0.0025f), enable_search(true) {
+	player(const std::string& args = "") : agent("name=chocolate role=player " + args), alpha(0.0025f), enable_search(true) {
 		episode.reserve(32768);
 		if (property.find("seed") != property.end())
 			engine.seed(int(property["seed"]));
