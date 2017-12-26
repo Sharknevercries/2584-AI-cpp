@@ -75,19 +75,20 @@ public:
 		const int tile = popup(engine) ? 1 : 3;
 
 		if (enable_evil) {
-			float min_value = 1e9;
+			float m = 1e9, m4 = m * 4;
 			int best_pos = -1;
 			board temp1(b), temp2(b);
 			for (const int pos : space) {
 				if (b(pos) != 0) continue;
-				float value = 0;
-				temp1(pos) = 1, temp2(pos) = 3;
-				// level should be given 1, 3, ...
-				value += max_node(1, temp1) * 0.75;
-				value += max_node(1, temp2) * 0.25;
+				float v1, v2, ev;
+				temp1(pos) = 1, temp2(pos) = 3;				
+				v1 = max_node(3, temp1, -1e9, 1e9);
+				v2 = max_node(3, temp2, -1e9, m4 - 3 * v1);
+				ev = v1 * 0.75 + v2 * 0.25;
 				temp1(pos) = 0, temp2(pos) = 0;
-				if (min_value > value) {
-					min_value = value;
+				if (m > ev) {
+					m = ev;
+					m4 = m * 4;
 					best_pos = pos;
 				}
 			}
@@ -103,38 +104,51 @@ public:
 		return action();
 	}
 private:
-	float max_node(const int level, const board& b) {
-		float max_value = 0;
+	float max_node(const int level, const board& b, float alpha, float beta) {
+		float m = alpha;
+		bool has_child = false;
 		for (int op = 0; op < 4; ++op) {
 			board temp(b);
 			int reward = action::move(op).apply(temp);
 			float esti = 0;
 			if (reward != -1) {
+				has_child = true;
 				if (level - 1 > 0)
-					esti = min_node(level - 1, temp);
+					esti = min_node(level - 1, temp, m - reward, beta);
 				else
 					esti = tn.estimate(temp);
-				max_value = std::max(max_value, reward + esti);
+				m = std::max(m, reward + esti);
+				if (m >= beta)
+					return m;
 			}
-			else
-				max_value = std::max(max_value, 0.0f);
 		}
-		return max_value;
+		return has_child ? m : 0;
 	}
 
-	float min_node(const int level, const board& b) {
-		float min_value = 1e9;
+	float min_node(const int level, const board& b, float alpha, float beta) {
+		const float a4 = alpha * 4;
+		float m = beta, m4 = 4 * m;
+		bool has_child = false;
 		board temp1(b), temp2(b);
-		for (const int pos : space) {
-			if (b(pos) != 0) continue;
-			float value = 0;
-			temp1(pos) = 1, temp2(pos) = 3;
-			value += max_node(level - 1, temp1) * 0.75;
-			value += max_node(level - 1, temp2) * 0.25;
-			temp1(pos) = 0, temp2(pos) = 0;
-			min_value = std::min(min_value, value);
+		for (int i = 0; i < 16; ++i) {
+			if (b(i) != 0)	continue;
+			has_child = true;
+
+			float v1 = 0, v2, v3, ev;
+			temp1(i) = 1, temp2(i) = 3;
+			v1 = max_node(level - 1, temp1, -1e9, 1e9);
+			v3 = v1 * 3;
+			v2 = max_node(level - 1, temp2, a4 - v3, m4 - v3);
+			temp1(i) = 0, temp2(i) = 0;
+			ev = v1 * 0.75 + v2 * 0.25;
+			if (m > ev) {
+				m = ev;
+				m4 = 4 * m;
+			}
+			if (m <= alpha)
+				return m;
 		}
-		return min_value;
+		return has_child ? m : 0;
 	}
 
 private:
@@ -252,7 +266,7 @@ private:
 			if (b(i) != 0)	continue;
 			has_child = true;
 
-			float v1 = 0, v2, v3, ev;
+			float v1, v2, v3, ev;
 			temp1(i) = 1, temp2(i) = 3;
 			v1 = max_node(level - 1, temp1, -1e9, 1e9);
 			v3 = v1 * 3;
@@ -268,6 +282,8 @@ private:
 		}
 		return has_child ? m : 0;
 	}
+
+	
 
 private:
 	tuple_netwrok tn;
