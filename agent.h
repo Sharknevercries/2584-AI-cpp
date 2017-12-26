@@ -164,76 +164,97 @@ private:
  */
 class player : public agent {
 public:
-	player(const std::string& args = "") : agent("name=chocolate role=player " + args), alpha(0.0025f), enable_search(true) {
+	player(const std::string& args = "") : agent("name=chocolate role=player " + args), alpha(0.0025f), enable_search(true), enable_player(true) {
 		episode.reserve(32768);
 		if (property.find("seed") != property.end())
 			engine.seed(int(property["seed"]));
 		if (property.find("alpha") != property.end())
 			alpha = float(property["alpha"]);
+		if (property.find("player") != property.end())
+			enable_player = ((int)property["player"] == 1) ? true : false;
 		if (property.find("search") != property.end())
 			enable_search = ((int)property["search"] == 1) ? true : false;
 
-		tn = tuple_netwrok({
-			{0, 1, 2, 3, 4},
-			{0, 1, 4, 5, 6},
-			{1, 2, 3, 5, 6},
-			{5, 6, 7, 9, 10},
-		});
+		if (enable_player) {
+			tn = tuple_netwrok({
+				{0, 1, 2, 3, 4},
+				{0, 1, 4, 5, 6},
+				{1, 2, 3, 5, 6},
+				{5, 6, 7, 9, 10},
+			});
 
-		if (property.find("load") != property.end())
-			tn.load_weights(property["load"]);
+			if (property.find("load") != property.end())
+				tn.load_weights(property["load"]);
+		}
 	}
 	~player() {
-		if (property.find("save") != property.end())
-			tn.save_weights(property["save"]);
+		if (enable_player) {
+			if (property.find("save") != property.end())
+				tn.save_weights(property["save"]);
+		}
 	}
 
 	virtual void open_episode(const std::string& flag = "") {
-		episode.clear();
-		episode.reserve(32768);
+		if (enable_player) {
+			episode.clear();
+			episode.reserve(32768);
+		}
 	}
 
 	virtual void close_episode(const std::string& flag = "") {
-		auto cur = episode.end() - 1, prev = cur - 1;
-		tn.update(cur->after, alpha * (-tn.estimate(cur->after)));		
-		while (cur != episode.begin()) {
-			float td_error = cur->reward + tn.estimate(cur->after) - tn.estimate(prev->after);
-			tn.update(prev->after, alpha * td_error);
-			cur = prev;
-			--prev;
+		if (enable_player) {
+			auto cur = episode.end() - 1, prev = cur - 1;
+			tn.update(cur->after, alpha * (-tn.estimate(cur->after)));		
+			while (cur != episode.begin()) {
+				float td_error = cur->reward + tn.estimate(cur->after) - tn.estimate(prev->after);
+				tn.update(prev->after, alpha * td_error);
+				cur = prev;
+				--prev;
+			}
 		}
 	}
 
 	virtual action take_action(const board& before) {
-		state best(before, action(), 0);
-		float best_value = -1e9;
+		if (enable_player) {
+			state best(before, action(), 0);
+			float best_value = -1e9;
 
-		for (int op = 0; op < 4; ++op) {
-			auto act = action::move(op);
-			auto temp = board(before);
-			int reward = act.apply(temp);
-			const int empty_tiles = temp.empty_tile_count();
-			if (reward != -1) {
-				float esti = 0;
-				if (enable_search) {
-					if (empty_tiles < 2)
-						esti = min_node(6, temp, best_value - reward, 1e9);
-					else if (empty_tiles < 4)
-						esti = min_node(4, temp, best_value - reward, 1e9);
+			for (int op = 0; op < 4; ++op) {
+				auto act = action::move(op);
+				auto temp = board(before);
+				int reward = act.apply(temp);
+				const int empty_tiles = temp.empty_tile_count();
+				if (reward != -1) {
+					float esti = 0;
+					if (enable_search) {
+						if (empty_tiles < 2)
+							esti = min_node(6, temp, best_value - reward, 1e9);
+						else if (empty_tiles < 4)
+							esti = min_node(4, temp, best_value - reward, 1e9);
+						else
+							esti = min_node(2, temp, best_value - reward, 1e9);
+					}
 					else
-						esti = min_node(2, temp, best_value - reward, 1e9);
-				}
-				else
-					esti = tn.estimate(temp);
-				if (reward + esti > best_value) {
-					best = state(temp, act, reward);
-					best_value = reward + esti;
+						esti = tn.estimate(temp);
+					if (reward + esti > best_value) {
+						best = state(temp, act, reward);
+						best_value = reward + esti;
+					}
 				}
 			}
-		}
-		episode.push_back(best);
+			episode.push_back(best);
 
-		return best.move;
+			return best.move;
+		}
+		else {
+			int opcode[] = { 0, 1, 2, 3 };
+			std::shuffle(opcode, opcode + 4, engine);
+			for (int op : opcode) {
+				board b = before;
+				if (b.move(op) != -1) return action::move(op);
+			}
+			return action();
+		}
 	}
 private:
 	float max_node(const int level, const board& b, float alpha, float beta) {
@@ -299,6 +320,7 @@ private:
 	std::vector<state> episode;
 	float alpha;
 	bool enable_search;
+	bool enable_player;
 
 private:
 	std::default_random_engine engine;
