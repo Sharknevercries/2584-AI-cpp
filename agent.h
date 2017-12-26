@@ -188,12 +188,14 @@ private:
  */
 class player : public agent {
 public:
-	player(const std::string& args = "") : agent("name=player role=player " + args), alpha(0.0025f) {
+	player(const std::string& args = "") : agent("name=player role=player " + args), alpha(0.0025f), enable_search(true) {
 		episode.reserve(32768);
 		if (property.find("seed") != property.end())
 			engine.seed(int(property["seed"]));
 		if (property.find("alpha") != property.end())
 			alpha = float(property["alpha"]);
+		if (property.find("search") != property.end())
+			enable_search = ((int)property["search"] == 1) ? true : false;
 
 		tn = tuple_netwrok({
 			{0, 1, 2, 3, 4},
@@ -237,13 +239,16 @@ public:
 			const int empty_tiles = temp.empty_tile_count();
 			if (reward != -1) {
 				float esti = 0;
-				// esti = tn.estimate(temp);
-				if (empty_tiles < 2)
-					esti = min_node(6, temp, best_value - reward, 1e9);
-				else if (empty_tiles < 4)
-					esti = min_node(4, temp, best_value - reward, 1e9);
+				if (enable_search) {
+					if (empty_tiles < 2)
+						esti = min_node(6, temp, best_value - reward, 1e9);
+					else if (empty_tiles < 4)
+						esti = min_node(4, temp, best_value - reward, 1e9);
+					else
+						esti = min_node(2, temp, best_value - reward, 1e9);
+				}
 				else
-					esti = min_node(2, temp, best_value - reward, 1e9);
+					esti = tn.estimate(temp);
 				if (reward + esti > best_value) {
 					best = state(temp, act, reward);
 					best_value = reward + esti;
@@ -315,6 +320,7 @@ private:
 
 	std::vector<state> episode;
 	float alpha;
+	bool enable_search;
 
 private:
 	std::default_random_engine engine;
