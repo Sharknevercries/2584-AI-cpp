@@ -39,7 +39,12 @@ If not specify type, first player/evil is used. (Ex: dummy/random)
             - load
             - alpha
             - search
-            - threshold
-    - maple
+                - empty tile count 1, search 5 layers
+                - empty tile count 2~4, search 3 layers
+                - otherwise, search 1 layers
+            - threshold: int
+                - Only when board max_tile reaches threshold, then active tuple_network
+                - If given negative value, it perform loading adative tuple_network
+    - coconut
         - Based on evil, with defualt settings
-            - alpha=0 
+            - alpha=0, search=1, threshold=-1 

@@ -4,6 +4,7 @@
 #include "player/tn.h"
 #include "evil/random.h"
 #include "evil/tn_p.h"
+#include "evil/tn.h"
 
 class player_factory {
 public:
@@ -46,7 +47,11 @@ public:
         else if (type == "tn_p")
             return new tn_p_evil("name=tn_p " + args);
         else if (type == "vanilla")
-            return new tn_p_evil("name=vanilla search=1" + args);
+            return new tn_p_evil("name=vanilla search=1 " + args);
+        else if (type == "tn")
+            return new tn_evil("name=tn " + args);
+        else if (type == "coconut")
+            return new tn_evil("name=coconut search=1 threshold=-1 alpha=0" + args);
         return new random_evil("name=random " + args);
     }
 };

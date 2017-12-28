@@ -150,6 +150,14 @@ public:
 		return count;
 	}
 
+	int get_max_tile() const {
+		int max_tile = 0;
+		for (int r = 0; r < 4; ++r)
+			for (int c = 0; c < 4; ++c)
+				max_tile = std::max(max_tile, tile[r][c]);
+		return max_tile;
+	}
+
 public:
     friend std::ostream& operator <<(std::ostream& out, const board& b) {
 		char buff[64];
