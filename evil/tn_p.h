@@ -27,13 +27,8 @@ public:
 		int best_pos = -1;
 		int level = 1;
 
-		if (enable_search) {
-			const int empty_tiles = b.empty_tile_count();
-			if (empty_tiles < 2)
-				level = 5;
-			else if (empty_tiles < 5)
-				level = 3;
-		}
+		if (enable_search)
+			level = get_search_level(b);
 		
 		board temp1(b), temp2(b);
 		for (const int pos : space) {
@@ -99,6 +94,16 @@ private:
 				return m;
 		}
 		return has_child ? m : 0;
+	}
+
+	int get_search_level(const board& b) const {
+		const int empty_tiles = b.get_empty_tile_count();
+		if (empty_tiles < 2)
+			return 5;
+		else if (empty_tiles < 5)
+			return 3;
+		else
+			return 1; 
 	}
 
 private:

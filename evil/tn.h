@@ -56,6 +56,11 @@ public:
 		}
 
 		if (max_tile >= threshold) {
+			int level = 1;
+
+			if (enable_search)
+				level = get_search_level(b);
+
 			float max_value = -1e9;
 			int best_pos = -1;
 			board temp1(b), temp2(b);
@@ -63,9 +68,8 @@ public:
 				if (b(pos) != 0) continue;
 				float value = 0;
 				temp1(pos) = 1, temp2(pos) = 3;
-				// TODO: use empty tiles to decide layer.
-				value += min_node(1, temp1) * 0.75;
-				value += min_node(1, temp2) * 0.25;
+				value += min_node(level, temp1) * 0.75;
+				value += min_node(level, temp2) * 0.25;
 				temp1(pos) = 0, temp2(pos) = 0;
 				if (value > max_value) {
 					max_value = value;
@@ -124,6 +128,16 @@ private:
 	void switch_tuple_network(const int threshold) {
 		std::string weight_filename = "ew_" + std::to_string(threshold);
 		tn.load_weights(weight_filename);
+	}
+
+	int get_search_level(const board& b) const {
+		const int empty_tiles = b.get_empty_tile_count();
+		if (empty_tiles < 2)
+			return 5;
+		else if (empty_tiles < 5)
+			return 3;
+		else
+			return 1; 
 	}
 
 private:

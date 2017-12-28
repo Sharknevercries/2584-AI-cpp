@@ -49,17 +49,10 @@ public:
 			auto act = action::move(op);
 			auto temp = board(before);
 			int reward = act.apply(temp);
-			const int empty_tiles = temp.empty_tile_count();
 			int level = 0;
 
-			if (enable_search) {
-				if (empty_tiles < 2)
-					level = 6;
-				else if (empty_tiles < 3)
-					level = 4;
-				else
-					level = 2;
-			}
+			if (enable_search)
+				level = get_search_level(temp);
 
 			if (reward != -1) {
 				float esti = 0;
@@ -124,6 +117,16 @@ private:
 				return m;
 		}
 		return has_child ? m : 0;
+	}
+
+	int get_search_level(const board& b) const {
+		const int empty_tiles = b.get_empty_tile_count();
+		if (empty_tiles < 2)
+			return 6;
+		else if (empty_tiles < 3)
+			return 4;
+		else
+			return 2;
 	}
 
 private:
