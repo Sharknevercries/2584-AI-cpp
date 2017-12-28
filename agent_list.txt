@@ -1,0 +1,45 @@
+Specify type in --play, or --evil.
+Ex: ./2584 --play=type=dummy --evil=type=random
+If not specify type, first player/evil is used. (Ex: dummy/random)
+
+- Player
+    - dummy
+        - Random move
+        - Args
+            - seed: int
+    - tn
+        - Use leon tuple_network to find max move
+        - Args
+            - search: 0/1 (alpha-beta)
+                - empty tile count 1, search 6 layers
+                - empty tile count 2, search 4 layers
+                - otherwise, search 2 layers
+            - alpha: learning rate
+            - save: tuple_weight
+            - load: tuple_weight
+    - chocola
+        - Based on tn, with defualt settings
+            - alpha=0, search=1
+
+- Evil
+    - random
+        - Random move
+    - tn_p
+        - Use Player-tn tuple_network weight to minimize the future reward with adative searching in depth
+            - empty tile count 1, search 5 layers
+            - empty tile count 2~4, search 3 layers
+            - otherwise, search 1 layers
+        - Args
+            - load
+            - seed
+    - tn
+        - Use tuple_network to minimize the future steps with adative searching in depth
+        - Args
+            - save
+            - load
+            - alpha
+            - search
+            - threshold
+    - maple
+        - Based on evil, with defualt settings
+            - alpha=0 

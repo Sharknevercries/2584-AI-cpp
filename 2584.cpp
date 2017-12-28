@@ -23,6 +23,7 @@
 #include "action.h"
 #include "agent.h"
 #include "statistic.h"
+#include "factory.h"
 
 int shell(int argc, const char* argv[]) {
 
@@ -48,11 +49,11 @@ int shell(int argc, const char* argv[]) {
 		std::string para(argv[i]);
 		if (para.find("--play") == 0) {
 			std::string args = para.find("--play=") == 0 ? para.substr(para.find("=") + 1) : "";
-			std::shared_ptr<agent> who(new player(args)); // TODO: change to your player agent
+			std::shared_ptr<agent> who(player_factory::create_player(args)); // TODO: change to your player agent
 			lounge[who->name()] = who;
 		} else if (para.find("--evil") == 0) {
 			std::string args = para.find("--evil=") == 0 ? para.substr(para.find("=") + 1) : "";
-			std::shared_ptr<agent> who(new rndenv(args)); // TODO: change to your environment agent
+			std::shared_ptr<agent> who(evil_factory::create_evil(args)); // TODO: change to your environment agent
 			lounge[who->name()] = who;
 		} else if (para.find("--save") == 0) {
 			save_statistics = true;
@@ -214,27 +215,27 @@ int main(int argc, const char* argv[]) {
 		in.close();
 	}
 
-	player play(play_args);
-	rndenv evil(evil_args);
+	agent* play = player_factory::create_player(play_args);
+	agent* evil = evil_factory::create_evil(evil_args);
 
 	while (!stat.is_finished()) {
-		play.open_episode("~:" + evil.name());
-		evil.open_episode(play.name() + ":~");
+		play->open_episode("~:" + evil->name());
+		evil->open_episode(play->name() + ":~");
 
-		stat.open_episode(play.name() + ":" + evil.name());
+		stat.open_episode(play->name() + ":" + evil->name());
 		board game = stat.make_empty_board();
 		while (true) {
-			agent& who = stat.take_turns(play, evil);
-			action move = who.take_action(game);
+			agent* who = &stat.take_turns(*play, *evil);
+			action move = who->take_action(game);
 			if (move.apply(game) == -1) break;
 			stat.save_action(move);
-			if (who.check_for_win(game)) break;
+			if (who->check_for_win(game)) break;
 		}
-		agent& win = stat.last_turns(play, evil);
-		stat.close_episode(win.name());
+		agent* win = &stat.last_turns(*play, *evil);
+		stat.close_episode(win->name());
 
-		play.close_episode(win.name());
-		evil.close_episode(win.name());
+		play->close_episode(win->name());
+		evil->close_episode(win->name());
 	}
 
 	if (summary) {
@@ -249,6 +250,9 @@ int main(int argc, const char* argv[]) {
 		out.flush();
 		out.close();
 	}
+
+	delete play;
+	delete evil;
 
 	return 0;
 }
