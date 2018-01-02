@@ -28,6 +28,7 @@ public:
 	}
 
 	virtual void open_episode(const std::string& flag = "") {
+		prev_max_tile = -1;
 		episode.clear();
 		episode.reserve(32768);
 	}
@@ -126,8 +127,11 @@ private:
 	}
 
 	void switch_tuple_network(const int threshold) {
-		std::string weight_filename = "ew_" + std::to_string(threshold);
-		tn.load_weights(weight_filename);
+		const std::vector<int> available_network = {0, 5, 7, 10, 13, 15, 16, 17, 18, 19};
+		if(std::find(available_network.begin(), available_network.end(), threshold) != available_network.end()) {
+			std::string weight_filename = "ew_" + std::to_string(threshold);
+			tn.load_weights(weight_filename);
+		}
 	}
 
 	int get_search_level(const board& b) const {
