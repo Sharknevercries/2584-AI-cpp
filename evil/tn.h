@@ -62,18 +62,21 @@ public:
 			if (enable_search)
 				level = get_search_level(b);
 
-			float max_value = -1e9;
+			float max_value = -1e9, m4 = max_value * 4;
 			int best_pos = -1;
 			board temp1(b), temp2(b);
 			for (const int pos : space) {
 				if (b(pos) != 0) continue;
-				float value = 0;
+				float v1, v2, v3, ev;
 				temp1(pos) = 1, temp2(pos) = 3;
-				value += min_node(level, temp1) * 0.75;
-				value += min_node(level, temp2) * 0.25;
+				v1 = min_node(level, temp1, -1e9, 1e9);
+				v3 = v1 * 3;
+				v2 = min_node(level, temp2, m4 - v3, 1e9);
 				temp1(pos) = 0, temp2(pos) = 0;
-				if (value > max_value) {
-					max_value = value;
+				ev = v1 * 0.75 + v2 * 0.25;
+				if (ev > max_value) {
+					max_value = ev;
+					m4 = max_value * 4;
 					best_pos = pos;
 				}
 			}
@@ -92,38 +95,51 @@ public:
 	}
 
 private:
-	float min_node(const int level, const board& b) {
-		float min_value = 1e9;
+	float min_node(const int level, const board& b, float alpha, float beta) {
+		float m = beta;
+		bool has_child = false;
 		for (int op = 0; op < 4; ++op) {
 			board temp(b);
 			int reward = action::move(op).apply(temp);
 			float esti = 0;
 			if (reward != -1) {
-				if (level - 2 > 0)
-					esti = max_node(level - 1, temp);
+				has_child = true;
+				if (level - 1 > 0)
+					esti = max_node(level - 1, temp, alpha, m);
 				else
 					esti = tn.estimate(temp);
-				min_value = std::min(min_value, esti);
+				m = std::min(m, esti);
+				if (m <= alpha)
+					return m;
 			}
-			else
-				min_value = std::min(min_value, 0.0f);
 		}
-		return min_value;
+		return has_child ? m : 0;
 	}
 
-	float max_node(const int level, const board& b) {
-		float max_value = -1e9;
+	float max_node(const int level, const board& b, float alpha, float beta) {
+		const float b4 = beta * 4;
+		float m = alpha, m4 = m * 4;
+		bool has_child = false;
 		board temp1(b), temp2(b);
 		for (const int pos : space) {
 			if (b(pos) != 0) continue;
-			float value = 0;
+			has_child = true;
+
+			float v1, v2, v3, ev;
 			temp1(pos) = 1, temp2(pos) = 3;
-			value += min_node(level - 1, temp1) * 0.75;
-			value += min_node(level - 1, temp2) * 0.25;
+			v1 = min_node(level - 1, temp1, -1e9, 1e9);
+			v3 = v1 * 3;
+			v2 = min_node(level - 1, temp2, m4 - v3 + 4, b4 - v3 + 4);
 			temp1(pos) = 0, temp2(pos) = 0;
-			max_value = std::max(max_value, value);
+			ev = v1 * 0.75 + v2 * 0.25 - 1;
+			if (ev > m) {
+				m = ev;
+				m4 = m * 4;
+			}
+			if (m >= beta)
+				return m;
 		}
-		return max_value;
+		return has_child ? m : 0;
 	}
 
 	void switch_tuple_network(const int threshold) {
