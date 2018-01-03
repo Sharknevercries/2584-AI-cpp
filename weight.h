@@ -38,6 +38,8 @@ public:
 		// 	std::cerr << "reading to a non-empty weight" << std::endl;
 		// 	std::exit(1);
 		// }
+		if (value)
+			delete[] value;
 		if (in.read(reinterpret_cast<char*>(&size), sizeof(size_t))) {
 			value = alloc(size);
 			in.read(reinterpret_cast<char*>(value), sizeof(float) * size);
