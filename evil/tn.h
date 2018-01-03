@@ -12,7 +12,7 @@ public:
 			threshold = (int)property["threshold"];
 		if (property.find("alpha") != property.end())
 			alpha = float(property["alpha"]);
-		tn = tuple_netwrok({
+		tn = tuple_network({
 			{0, 1, 2, 3, 4},
 			{0, 1, 4, 5, 6},
 			{1, 2, 3, 5, 6},
@@ -168,7 +168,7 @@ private:
 	};
 
 	std::default_random_engine engine;
-	tuple_netwrok tn;
+	tuple_network tn;
 	std::vector<state> episode;
 	float alpha;
 	bool enable_search;

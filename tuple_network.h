@@ -5,13 +5,14 @@
 #include "feature.h"
 #include "weight.h"
 
-class tuple_netwrok {
+class tuple_network {
 public:
-    tuple_netwrok() {};
-    tuple_netwrok(std::vector<std::array<int, 5>> tuples) {
+    tuple_network() {};
+    tuple_network(std::vector<std::array<int, 5>> tuples) {
 		for (auto &ps : tuples)
 			features.push_back(feature(ps));
     }
+
 public:
 	virtual void update(const board& b, float v) {
 		v /= features.size();
@@ -49,6 +50,7 @@ public:
 		out.flush();
 		out.close();
 	}
+
 private:
     std::vector<feature> features;
 };
