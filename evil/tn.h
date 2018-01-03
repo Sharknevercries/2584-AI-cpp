@@ -3,7 +3,7 @@
 
 class tn_evil : public agent {
 public:
-	tn_evil(const std::string& args = "") : agent("role=environment " + args), alpha(0.0025f), enable_search(false), threshold(-1), prev_max_tile(-1) {
+	tn_evil(const std::string& args = "") : agent("role=environment " + args), alpha(0.0025f), enable_search(false), threshold(-1), prev_max_tile(-1), epsilon(0.0) {
 		if (property.find("seed") != property.end())
 			engine.seed(int(property["seed"]));
 		if (property.find("search") != property.end())
@@ -12,6 +12,8 @@ public:
 			threshold = (int)property["threshold"];
 		if (property.find("alpha") != property.end())
 			alpha = float(property["alpha"]);
+		if (property.find("epsilon") != property.end())
+			epsilon = float(property["epsilon"]);
 		tn = tuple_network({
 			{0, 1, 2, 3, 4},
 			{0, 1, 4, 5, 6},
@@ -47,51 +49,20 @@ public:
 	}
 
 	virtual action take_action(const board& b) {
-		std::uniform_int_distribution<int> popup(0, 3);
-		const int tile = popup(engine) ? 1 : 3;
 		const int max_tile = b.get_max_tile();
+		action taken_action;
 
 		if (threshold < 0 && prev_max_tile < max_tile) {
 			switch_tuple_network(max_tile);
 			prev_max_tile = max_tile;
 		}
-
-		if (max_tile >= threshold) {
-			int level = 1;
-
-			if (enable_search)
-				level = get_search_level(b);
-
-			float max_value = -1e9, m4 = max_value * 4;
-			int best_pos = -1;
-			board temp1(b), temp2(b);
-			for (const int pos : space) {
-				if (b(pos) != 0) continue;
-				float v1, v2, v3, ev;
-				temp1(pos) = 1, temp2(pos) = 3;
-				v1 = min_node(level, temp1, -1e9, 1e9);
-				v3 = v1 * 3;
-				v2 = min_node(level, temp2, m4 - v3, 1e9);
-				temp1(pos) = 0, temp2(pos) = 0;
-				ev = v1 * 0.75 + v2 * 0.25;
-				if (ev > max_value) {
-					max_value = ev;
-					m4 = max_value * 4;
-					best_pos = pos;
-				}
-			}
-
-			episode.push_back(state(b, -1)); // step reward for env
-			return best_pos == -1 ? action() : action::place(tile, best_pos);
-		}
-		else {
-			std::shuffle(space.begin(), space.end(), engine);
-			for (const int pos : space) {
-				if (b(pos) != 0) continue;
-				return action::place(tile, pos);
-			}
-			return action();
-		}
+		
+		if (max_tile >= threshold)
+			taken_action = take_epsilon_greedy(b);
+		else
+			taken_action = take_random_move(b);
+		episode.push_back(state(b, -1)); // step reward for env		
+		return taken_action;
 	}
 
 private:
@@ -160,6 +131,58 @@ private:
 			return 1; 
 	}
 
+	action take_random_move(const board& b) {
+		std::uniform_int_distribution<int> popup(0, 3);
+		const int tile = popup(engine) ? 1 : 3;
+		std::shuffle(space.begin(), space.end(), engine);
+		for (const int pos : space) {
+			if (b(pos) != 0) continue;
+			return action::place(tile, pos);
+		}
+		return action();
+	}
+	
+	action take_best_move(const board& b) {
+		std::uniform_int_distribution<int> popup(0, 3);
+		const int tile = popup(engine) ? 1 : 3;
+		
+		int level = 1;
+		if (enable_search)
+			level = get_search_level(b);
+
+		float max_value = -1e9, m4 = max_value * 4;
+		int best_pos = -1;
+		board temp1(b), temp2(b);
+		for (const int pos : space) {
+			if (b(pos) != 0) continue;
+			float v1, v2, v3, ev;
+			temp1(pos) = 1, temp2(pos) = 3;
+			v1 = min_node(level, temp1, -1e9, 1e9);
+			v3 = v1 * 3;
+			v2 = min_node(level, temp2, m4 - v3, 1e9);
+			temp1(pos) = 0, temp2(pos) = 0;
+			ev = v1 * 0.75 + v2 * 0.25;
+			if (ev > max_value) {
+				max_value = ev;
+				m4 = max_value * 4;
+				best_pos = pos;
+			}
+		}
+
+		return best_pos == -1 ? action() : action::place(tile, best_pos);
+	}
+
+	action take_epsilon_greedy(const board& b) {
+		std::uniform_real_distribution<> popup(0.0, 1.0);
+		bool use_best_move = popup(engine) > epsilon;
+
+		if (use_best_move)
+			return take_best_move(b);
+		else
+			return take_random_move(b);
+	}
+
+
 private:
 	struct state {
 		state(const board& before, int reward) : before(before), reward(reward) {}
@@ -174,4 +197,5 @@ private:
 	bool enable_search;
 	int threshold;
 	int prev_max_tile;
+	float epsilon;
 };
