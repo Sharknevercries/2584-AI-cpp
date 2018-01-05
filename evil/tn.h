@@ -114,7 +114,7 @@ private:
 	}
 
 	void switch_tuple_network(const int threshold) {
-		const std::vector<int> available_network = {0, 5, 7, 10, 13, 15, 16, 17, 18, 19};
+		const std::vector<int> available_network = {0, 5, 6, 7, 8, 9, 10, 13, 15, 16, 17, 18, 19};
 		if(std::find(available_network.begin(), available_network.end(), threshold) != available_network.end()) {
 			std::string weight_filename = "ew_" + std::to_string(threshold);
 			tn.load_weights(weight_filename);
