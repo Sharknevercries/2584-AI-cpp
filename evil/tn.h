@@ -144,7 +144,14 @@ private:
 	
 	action take_best_move(const board& b) {
 		std::uniform_int_distribution<int> popup(0, 3);
-		const int tile = popup(engine) ? 1 : 3;
+		bool given_tile = false;
+		int tile = 0;
+		if (property.find("tile") != property.end()) {
+			tile = (int)property["tile"];
+			given_tile = true;
+		}
+		else
+			tile = popup(engine) ? 1 : 3;
 		
 		int level = 1;
 		if (enable_search)
@@ -156,12 +163,19 @@ private:
 		for (const int pos : space) {
 			if (b(pos) != 0) continue;
 			float v1, v2, v3, ev;
-			temp1(pos) = 1, temp2(pos) = 3;
-			v1 = min_node(level, temp1, -1e9, 1e9);
-			v3 = v1 * 3;
-			v2 = min_node(level, temp2, m4 - v3, 1e9);
-			temp1(pos) = 0, temp2(pos) = 0;
-			ev = v1 * 0.75 + v2 * 0.25;
+			if (given_tile) {
+				temp1(pos) = tile;
+				ev = min_node(level, temp1, max_value, 1e9);
+				temp1(pos) = 0;
+			}
+			else {
+				temp1(pos) = 1, temp2(pos) = 3;
+				v1 = min_node(level, temp1, -1e9, 1e9);
+				v3 = v1 * 3;
+				v2 = min_node(level, temp2, m4 - v3, 1e9);
+				temp1(pos) = 0, temp2(pos) = 0;
+				ev = v1 * 0.75 + v2 * 0.25;
+			}			
 			if (ev > max_value) {
 				max_value = ev;
 				m4 = max_value * 4;
