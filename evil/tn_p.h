@@ -21,7 +21,14 @@ public:
 
 	virtual action take_action(const board& b) {
 		std::uniform_int_distribution<int> popup(0, 3);
-		const int tile = popup(engine) ? 1 : 3;
+		bool given_tile = false;
+		int tile = 0;
+		if (property.find("tile") != property.end()) {
+			tile = (int)property["tile"];
+			given_tile = true;
+		}
+		else
+			tile = popup(engine) ? 1 : 3;
 
 		float m = 1e9, m4 = m * 4;
 		int best_pos = -1;
@@ -34,11 +41,19 @@ public:
 		for (const int pos : space) {
 			if (b(pos) != 0) continue;
 			float v1, v2, ev;
-			temp1(pos) = 1, temp2(pos) = 3;
-			v1 = max_node(level, temp1, -1e9, 1e9);
-			v2 = max_node(level, temp2, -1e9, m4 - 3 * v1);
-			ev = v1 * 0.75 + v2 * 0.25;
-			temp1(pos) = 0, temp2(pos) = 0;
+			if (given_tile) {
+				temp1(pos) = tile;
+				ev = max_node(level, temp1, -1e9, m);
+				temp1(pos) = 0;
+			}
+			else {
+				temp1(pos) = 1, temp2(pos) = 3;
+				v1 = max_node(level, temp1, -1e9, 1e9);
+				v2 = max_node(level, temp2, -1e9, m4 - 3 * v1);
+				ev = v1 * 0.75 + v2 * 0.25;
+				temp1(pos) = 0, temp2(pos) = 0;
+			}
+
 			if (m > ev) {
 				m = ev;
 				m4 = m * 4;
