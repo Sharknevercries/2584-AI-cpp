@@ -1,1 +1,4 @@
 .vscode
+/weights
+arena-*
+2584
