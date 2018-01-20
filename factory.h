@@ -2,6 +2,7 @@
 #include "agent.h"
 #include "player/dummy.h"
 #include "player/tn.h"
+#include "player/tn_mul.h"
 #include "evil/random.h"
 #include "evil/tn_p.h"
 #include "evil/tn.h"
@@ -25,6 +26,10 @@ public:
             return new tn_player("name=tn " + args);
         else if (type == "chocola")            
             return new tn_player("name=chocola alpha=0 search=1 " + args);
+        else if (type == "tn_mul")
+            return new tn_mul_player("name=tn_mul " + args);
+        else if (type == "maple")
+            return new tn_mul_player("name=maple alpha=0 search=1 " + args);
         return new dummy_player("name=dummy " + args);
     }    
 };
