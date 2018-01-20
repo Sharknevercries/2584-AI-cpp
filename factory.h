@@ -5,6 +5,7 @@
 #include "player/tn_mul.h"
 #include "evil/random.h"
 #include "evil/tn_p.h"
+#include "evil/tn_p_mul.h"
 #include "evil/tn.h"
 
 class player_factory {
@@ -53,6 +54,10 @@ public:
             return new tn_p_evil("name=tn_p " + args);
         else if (type == "vanilla")
             return new tn_p_evil("name=vanilla search=1 " + args);
+        else if (type == "tn_p_mul")
+            return new tn_p_mul_evil("name=tn_p_mul " + args);
+        else if (type == "cinnamon")
+            return new tn_p_mul_evil("name=cinnamon search=1 " + args);
         else if (type == "tn")
             return new tn_evil("name=tn " + args);
         else if (type == "coconut")
