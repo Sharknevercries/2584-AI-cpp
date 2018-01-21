@@ -154,18 +154,11 @@ private:
 	}
 
     tuple_network& get_tn(const int empty_tiles) {
-        if (empty_tiles <= 2)
-            return tns[0];
-        else if (empty_tiles <= 5)
-            return tns[1];
-        else if (empty_tiles <= 10)
-            return tns[2];
-        else
-            return tns[3];
+		return tns[empty_tiles / 2];
     }
 
 private:
-    std::array<tuple_network, 4> tns;
+    std::array<tuple_network, 8> tns;
 
 	struct state {
 		state() {}
