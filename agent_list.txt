@@ -20,6 +20,14 @@ If not specify type, first player/evil is used. (Ex: dummy/random)
     - chocola
         - Based on tn, with defualt settings
             - alpha=0, search=1
+    - tn_mul
+        - Same as tn, but with different empty tiles count, use different weight tables
+        - Args
+            - load: defualt load from weights/["load"][0-7]
+            - ...
+    - maple
+        - Based on tn_mul, with defualt settings
+            - alpha=0, search=1
 
 - Evil
     - random
@@ -47,4 +55,6 @@ If not specify type, first player/evil is used. (Ex: dummy/random)
                 - If given negative value, it perform loading adative tuple_network from ./weights/ folder
     - coconut
         - Based on evil, with defualt settings
-            - alpha=0, search=1, threshold=-1 
+            - alpha=0, search=1, threshold=-1
+    - tn_p_mul
+    - cinnamon

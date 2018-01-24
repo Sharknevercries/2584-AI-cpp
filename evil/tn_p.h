@@ -113,12 +113,12 @@ private:
 
 	int get_search_level(const board& b) const {
 		const int empty_tiles = b.get_empty_tile_count();
-		if (empty_tiles < 2)
+		if (empty_tiles < 3)
+			return 7;
+		else if (empty_tiles < 9)
 			return 5;
-		else if (empty_tiles < 5)
-			return 3;
 		else
-			return 1; 
+			return 3; 
 	}
 
 private:
